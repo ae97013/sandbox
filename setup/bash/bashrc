@@ -1,0 +1,48 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# User specific aliases and functions
+# .bashrc
+
+export PATH="$PATH:/usr/local/bin"
+export PATH="$PATH:/usr/software/bin:/usr/software/utils/bin"
+export PATH="$PATH:/usr/software/rats/bin:/usr/software/test/bin"
+export PATH="$PATH:$HOME/sandbox/scripts"
+export MANPATH="$MANPATH:/usr/local/man:/usr/man:/usr/man/X11:/usr/dt/man"
+
+## Primary prompt
+export PS1="[\u@\h \W]\$ "
+#export PS1="`hostname`% "
+#export PS1="\[\033[32;40m\]\h:\u\wi:% "
+#export PS1="\u@\h% "
+
+## Secondary prompt
+#export PS2="> "
+
+## Prompt 3
+#export PS3="#? "
+
+## Prompt 4
+#export PS4="+"
+
+## Commandline
+#set -o vi
+export PAGER='/usr/bin/less'
+
+alias q='exit'
+alias pine='alpine -i'
+alias cls='clear'
+alias dir='ls -lF --color'
+alias f='finger'
+alias vi='vim'
+
+export SB='$HOME/sandbox'
+alias cdsb="cd $SB"
+
+## System limits
+#ulimit -c unlimited
+umask 022

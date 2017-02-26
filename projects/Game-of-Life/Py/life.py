@@ -2,7 +2,6 @@
 
 import sys
 import pygame
-from pygame.locals import *
 import random
 
 CANVASWIDTH = 800
@@ -94,14 +93,13 @@ def main():
 
     while True:
         for event in pygame.event.get():
-            if event.type == QUIT:
+            if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
         grid = grid_tick(grid)
         grid_draw(grid)
         pygame.display.update()
-        # Limit frames per second
         clock.tick(FPS)
 
 if __name__== '__main__':

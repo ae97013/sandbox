@@ -17,9 +17,9 @@ GRIDHEIGHT = CANVASHEIGHT // CELLSIZE
 FPS = 10
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
-GRAY  = (40, 40, 40)
+GRAY  = (192, 192, 192)
 
-def grid_draw_cell(grid, cell):
+def grid_draw_cell(canvas, grid, cell):
     x = cell[0] * CELLSIZE
     y = cell[1] * CELLSIZE
     if grid[cell] == 0:
@@ -27,22 +27,21 @@ def grid_draw_cell(grid, cell):
     else:
         color = BLACK
     pygame.draw.rect(canvas, color, (x, y, CELLSIZE, CELLSIZE))
-    return None
 
-def grid_draw(grid):
+def grid_draw(canvas, grid):
     for cell in grid:
-        grid_draw_cell(grid, cell)
+        grid_draw_cell(canvas, grid, cell)
     for x in range(0, CANVASWIDTH, CELLSIZE):
         pygame.draw.line(canvas, GRAY, (x, 0), (x, CANVASHEIGHT))
     for y in range (0, CANVASHEIGHT, CELLSIZE):
         pygame.draw.line(canvas, GRAY, (0, y), (CANVASWIDTH, y))
 
 def grid_allocate():
-    return dict(((x,y), 0) for x in range(GRIDWIDTH) for y in range(GRIDHEIGHT))
+    return dict(((x,y), False) for x in range(GRIDWIDTH) for y in range(GRIDHEIGHT))
 
 def grid_randomize(grid):
-    for i in grid:
-        grid[i] = random.randint(0,1)
+    for cell in grid:
+        grid[cell] = bool(random.getrandbits(1))
     return grid
 
 def grid_neighbor_count(grid, cell):
@@ -54,32 +53,39 @@ def grid_neighbor_count(grid, cell):
             ncell = (cell[0] + x, cell[1] + y)
             if ncell[0] >= 0 and ncell[0] < GRIDWIDTH:
                 if ncell[1] >= 0 and ncell[1] < GRIDHEIGHT:
-                    if grid[ncell] == 1:
+                    if grid[ncell]:
                         neighbors += 1
     return neighbors
 
 #
+# At each generation, the following transitions occur:
+# 1. Any live cell with fewer than two live neighbors dies, (underpopulation).
+# 2. Any live cell with two or three live neighbors lives on to the next generation.
+# 3. Any live cell with more than three live neighbors dies (overpopulation).
+# 4. Any dead cell with exactly three live neighbors becomes a live cell (reproduction).
+#
+def grid_is_cell_alive(alive, neighbors):
+    if alive:
+        if neighbors < 2 or neighbors > 3:
+            return False
+        else:
+            return True
+    else:
+        if neighbors == 3:
+            return True
+        else:
+            return False
+#
 # Compute next generation.
 #
 def grid_tick(grid):
-    grid_nextgen = {}
+    nextgrid = {}
     for cell in grid:
         neighbors = grid_neighbor_count(grid, cell)
-        if grid[cell] == 1:
-            if neighbors < 2 or neighbors > 3:
-                grid_nextgen[cell] = 0
-            else:
-                grid_nextgen[cell] = 1
-        elif grid[cell] == 0:
-            if neighbors == 3:
-                grid_nextgen[cell] = 1
-            else:
-                grid_nextgen[cell] = 0
-    return grid_nextgen
+        nextgrid[cell] = grid_is_cell_alive(grid[cell], neighbors)
+    return nextgrid
 
 def main():
-    global canvas
-
     pygame.init()
     clock = pygame.time.Clock()
     canvas = pygame.display.set_mode((CANVASWIDTH, CANVASHEIGHT))
@@ -88,8 +94,6 @@ def main():
 
     grid = grid_allocate()
     grid = grid_randomize(grid)
-    grid_draw(grid)
-    pygame.display.update()
 
     while True:
         for event in pygame.event.get():
@@ -97,9 +101,9 @@ def main():
                 pygame.quit()
                 sys.exit()
 
-        grid = grid_tick(grid)
-        grid_draw(grid)
+        grid_draw(canvas, grid)
         pygame.display.update()
+        grid = grid_tick(grid)
         clock.tick(FPS)
 
 if __name__== '__main__':

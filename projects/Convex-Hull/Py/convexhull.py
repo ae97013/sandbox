@@ -5,8 +5,8 @@ import sys
 import pygame
 import random
 
-SCREENWIDTH = 800
-SCREENHEIGHT = 800
+SCREENWIDTH = 1200
+SCREENHEIGHT = 1200
 SCREENBORDER = 100
 CELLSIZE = 10
 POINTSIZE = 5
@@ -33,6 +33,9 @@ RED   = (255,   0,   0)
 def cross(o, a, b):
     return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
+def dist(o, a):
+    return (a[0] - o[0])**2 + (a[1] - o[1])**2
+
 def draw_point(screen, p):
     x = p[0] * CELLSIZE + SCREENBORDER
     y = p[1] * CELLSIZE + SCREENBORDER
@@ -58,8 +61,10 @@ def draw_hull(screen, hull, complete):
         draw_line(screen, p2, hull[0], RED)
 
 #
-# Computes the convex hull of a set of 2D points
-# using the gift-wrapping algorithm.
+# Computes the convex hull of a set of 2D points using the
+# gift-wrapping algorithm. Outputs a list of vertices of the
+# convex hull in counter-clockwise order, starting from the
+# vertex with the lexicographically smallest coordinates.
 #
 def giftwrap(screen, clock, points):
     points = sorted(set(points))
@@ -72,8 +77,15 @@ def giftwrap(screen, clock, points):
         hull.append(hullpoint)
         endpoint = points[0]
         for p in points[1:]:
-            if endpoint == hullpoint or cross(hullpoint, endpoint, p) < 0:
+            if endpoint == hullpoint:
                 endpoint = p
+            cp = cross(hullpoint, endpoint, p)
+            if cp > 0:
+                endpoint = p
+            if cp == 0:
+                if dist(hullpoint, p) > dist(hullpoint, endpoint):
+                    endpoint = p
+            # Animation
             screen.fill(WHITE)
             draw_points(screen, points)
             draw_hull(screen, hull, False)
@@ -92,20 +104,23 @@ def giftwrap(screen, clock, points):
     return hull
 
 def usage():
-    print("Usage: %s [--help] [--npoints N]" % sys.argv[0])
+    print("Usage: %s [--help] [--testcase] [--npoints N]" % sys.argv[0])
     sys.exit()
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hn:", ["help", "npoints="])
+        opts, args = getopt.getopt(sys.argv[1:], "htn:", ["help", "testcase", "npoints="])
     except getopt.GetoptError as err:
         print(err)
         usage()
 
     npoints = NUMPOINTS
+    rand = True
     for o, a in opts:
         if o in ("-n", "--npoints"):
             npoints = int(a)
+        elif o in ("-t", "--testcase"):
+            rand = False
         elif o in ("-h", "--help"):
             usage()
         else:
@@ -116,8 +131,13 @@ def main():
     screen = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
     pygame.display.set_caption("Convex Hull")
 
-    points = [(random.randint(0, GRIDWIDTH), random.randint(0, GRIDHEIGHT)) for _ in range(npoints)]
-    hull = giftwrap(screen, clock, points)
+    if rand:
+        points = [(random.randint(0, GRIDWIDTH), random.randint(0, GRIDHEIGHT)) for _ in range(npoints)]
+        hull = giftwrap(screen, clock, points)
+    else:
+        points = [((i // 10) * 10, (i % 10) * 10) for i in range(100)]
+        hull = giftwrap(screen, clock, points)
+        assert hull == [(0, 0), (90, 0), (90, 90), (0, 90)]
 
     while True:
         for event in pygame.event.get():

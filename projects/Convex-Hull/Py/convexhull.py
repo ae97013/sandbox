@@ -5,12 +5,12 @@ import sys
 import pygame
 import random
 
-SCREENWIDTH = 1200
-SCREENHEIGHT = 1200
+SCREENWIDTH = 800
+SCREENHEIGHT = 800
 SCREENBORDER = 100
 CELLSIZE = 10
 POINTSIZE = 5
-NUMPOINTS = 100
+NUMPOINTS = 50
 FPS = 10
 
 assert (SCREENWIDTH - 2 * SCREENBORDER) % CELLSIZE == 0
@@ -26,19 +26,20 @@ BLUE  = (  0,   0, 255)
 GREEN = (  0, 255,   0)
 RED   = (255,   0,   0)
 
-# 2D cross product of OA and OB vectors.
-# If OAB makes a counter-clockwise turn return positive value.
-# If OAB makes a clockwise turn return a negative value.
-# if OA is collinear returns zero.
+# Z-coordinate of the cross product of OA and OB vectors.
+# If OAB makes a counter-clockwise turn returns positive value.
+# If OAB makes a clockwise turn returns negative value.
+# If OAB is collinear returns zero.
 def cross(o, a, b):
     return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
+# Square of distance between points O & A.
 def dist(o, a):
     return (a[0] - o[0])**2 + (a[1] - o[1])**2
 
 def draw_point(screen, p):
     x = p[0] * CELLSIZE + SCREENBORDER
-    y = p[1] * CELLSIZE + SCREENBORDER
+    y = SCREENHEIGHT - (p[1] * CELLSIZE + SCREENBORDER)
     pygame.draw.circle(screen, BLACK, (x, y), POINTSIZE, 1)
 
 def draw_points(screen, points):
@@ -47,9 +48,9 @@ def draw_points(screen, points):
 
 def draw_line(screen, a, b, color):
     a_x = a[0] * CELLSIZE + SCREENBORDER
-    a_y = a[1] * CELLSIZE + SCREENBORDER
+    a_y = SCREENHEIGHT - (a[1] * CELLSIZE + SCREENBORDER)
     b_x = b[0] * CELLSIZE + SCREENBORDER
-    b_y = b[1] * CELLSIZE + SCREENBORDER
+    b_y = SCREENHEIGHT - (b[1] * CELLSIZE + SCREENBORDER)
     pygame.draw.line(screen, color, (a_x, a_y), (b_x, b_y), 1)
 
 def draw_hull(screen, hull, complete):
@@ -60,6 +61,19 @@ def draw_hull(screen, hull, complete):
     if complete:
         draw_line(screen, p2, hull[0], RED)
 
+def draw_scene(screen, clock, points, hull, hullpoint, endpoint, p):
+    screen.fill(WHITE)
+    draw_points(screen, points)
+    draw_hull(screen, hull, False)
+    draw_line(screen, hullpoint, endpoint, BLACK)
+    draw_line(screen, hullpoint, p, GREEN)
+    pygame.display.update()
+    clock.tick(FPS)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
 #
 # Computes the convex hull of a set of 2D points using the
 # gift-wrapping algorithm. Outputs a list of vertices of the
@@ -67,7 +81,8 @@ def draw_hull(screen, hull, complete):
 # vertex with the lexicographically smallest coordinates.
 #
 def giftwrap(screen, clock, points):
-    points = sorted(set(points))
+    # Sort the points by x-coord (in case of a tie, sort by y-coord)
+    points = sorted(points, key=lambda k: [k[0], k[1]])
     if len(points) <= 3:
         return points
 
@@ -81,23 +96,12 @@ def giftwrap(screen, clock, points):
                 endpoint = p
                 continue
             cp = cross(hullpoint, endpoint, p)
-            if cp > 0:
+            if cp < 0:
                 endpoint = p
             if cp == 0:
                 if dist(hullpoint, p) > dist(hullpoint, endpoint):
                     endpoint = p
-            # Animation
-            screen.fill(WHITE)
-            draw_points(screen, points)
-            draw_hull(screen, hull, False)
-            draw_line(screen, hullpoint, endpoint, BLACK)
-            draw_line(screen, hullpoint, p, GREEN)
-            pygame.display.update()
-            clock.tick(FPS)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+            draw_scene(screen, clock, points, hull, hullpoint, endpoint, p)
         if endpoint == points[0]:
             break
         hullpoint = endpoint
@@ -136,20 +140,20 @@ def main():
         points = [(random.randint(0, GRIDWIDTH), random.randint(0, GRIDHEIGHT)) for _ in range(npoints)]
         hull = giftwrap(screen, clock, points)
     else:
-        points = [((i // 10) * 10, (i % 10) * 10) for i in range(100)]
+        points = [((i // 7) * 10, (i % 7) * 10) for i in range(49)]
         hull = giftwrap(screen, clock, points)
-        assert hull == [(0, 0), (90, 0), (90, 90), (0, 90)]
+        assert hull == [(0, 0), (60, 0), (60, 60), (0, 60)]
 
     while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
         screen.fill(WHITE)
         draw_points(screen, points)
         draw_hull(screen, hull, True)
         pygame.display.update()
         clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 
 if __name__ == '__main__':
     main()

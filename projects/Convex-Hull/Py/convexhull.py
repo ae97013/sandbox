@@ -79,6 +79,7 @@ def giftwrap(screen, clock, points):
         for p in points[1:]:
             if endpoint == hullpoint:
                 endpoint = p
+                continue
             cp = cross(hullpoint, endpoint, p)
             if cp > 0:
                 endpoint = p
